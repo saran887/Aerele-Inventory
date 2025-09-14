@@ -1,9 +1,11 @@
+
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Products from './pages/Products';
 import Locations from './pages/Locations';
 import Movements from './pages/Movements';
 import Report from './pages/Report';
+
 import Navbar from './components/Navbar';
 
 export default function App() {

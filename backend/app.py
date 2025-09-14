@@ -51,11 +51,11 @@ def add_product():
     data = request.get_json()
     if not data or not data.get('product_id') or not data.get('name'):
         return jsonify({'error': 'product_id and name required'}), 400
-    if Product.query.get(data['product_id']):
+    if db.session.get(Product, data['product_id']):
         return jsonify({'error': 'Product ID already exists'}), 400
     total_qty = data.get('total_quantity', 0)
     location_id = data.get('location_id')
-    if location_id and not Location.query.get(location_id):
+    if location_id and not db.session.get(Location, location_id):
         return jsonify({'error': 'Location does not exist'}), 400
     p = Product(
         product_id=data['product_id'],
@@ -173,6 +173,21 @@ def delete_location(location_id):
     return jsonify({'message': 'Location deleted'})
 
 ## Signup and login endpoints fully removed
+
+# List all movements endpoint
+@app.route('/movements', methods=['GET'])
+def get_movements():
+    movements = ProductMovement.query.all()
+    return jsonify([
+        {
+            'movement_id': m.movement_id,
+            'timestamp': m.timestamp.isoformat(),
+            'from_location': m.from_location,
+            'to_location': m.to_location,
+            'product_id': m.product_id,
+            'qty': m.qty
+        } for m in movements
+    ])
     if 'movement_id' in data and data['movement_id']:
         movement_id = data['movement_id']
         if ProductMovement.query.get(movement_id):
