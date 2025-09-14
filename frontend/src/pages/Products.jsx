@@ -70,7 +70,6 @@ export default function Products() {
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Description</th>
                 <th className="px-4 py-2">Total Qty</th>
-                <th className="px-4 py-2">Remaining Qty</th>
                 <th className="px-4 py-2">Per Location</th>
                 <th></th>
               </tr>
@@ -82,7 +81,6 @@ export default function Products() {
                   <td className="border px-4 py-2">{p.name}</td>
                   <td className="border px-4 py-2">{p.description}</td>
                   <td className="border px-4 py-2 text-center">{p.total_quantity}</td>
-                  <td className="border px-4 py-2 text-center">{p.remaining_quantity}</td>
                   <td className="border px-4 py-2 text-center">
                     <div className="flex flex-col gap-1 items-center">
                       {balances.filter(b => b.product_id === p.product_id && b.qty !== 0).length === 0 && <span className="text-gray-400 text-xs">No stock in any location</span>}

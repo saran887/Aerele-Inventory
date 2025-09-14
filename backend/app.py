@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 db = SQLAlchemy(app)
 
 ## User model removed
@@ -18,7 +18,6 @@ class Product(db.Model):
     name = db.Column(db.String, nullable=False)
     description = db.Column(db.String)
     total_quantity = db.Column(db.Integer)
-    remaining_quantity = db.Column(db.Integer)
     location_id = db.Column(db.String, db.ForeignKey('location.location_id'), nullable=True)
 
 class Location(db.Model):
@@ -42,7 +41,7 @@ class ProductMovement(db.Model):
 def get_products():
     products = Product.query.all()
     return jsonify([
-        {'product_id': p.product_id, 'name': p.name, 'description': p.description, 'total_quantity': p.total_quantity, 'remaining_quantity': p.remaining_quantity, 'location_id': p.location_id} for p in products
+        {'product_id': p.product_id, 'name': p.name, 'description': p.description, 'total_quantity': p.total_quantity, 'location_id': p.location_id} for p in products
     ])
 
 @app.route('/products', methods=['POST'])
@@ -62,7 +61,6 @@ def add_product():
         name=data['name'],
         description=data.get('description'),
         total_quantity=total_qty,
-        remaining_quantity=total_qty,
         location_id=location_id
     )
     db.session.add(p)
@@ -88,7 +86,7 @@ def get_product(product_id):
     p = Product.query.get(product_id)
     if not p:
         return jsonify({'error': 'Product not found'}), 404
-    return jsonify({'product_id': p.product_id, 'name': p.name, 'description': p.description, 'total_quantity': p.total_quantity, 'remaining_quantity': p.remaining_quantity})
+    return jsonify({'product_id': p.product_id, 'name': p.name, 'description': p.description, 'total_quantity': p.total_quantity})
 
 @app.route('/products/<product_id>', methods=['PUT'])
 
@@ -100,11 +98,7 @@ def update_product(product_id):
     p.name = data.get('name', p.name)
     p.description = data.get('description', p.description)
     if 'total_quantity' in data:
-        diff = data['total_quantity'] - p.total_quantity
         p.total_quantity = data['total_quantity']
-        p.remaining_quantity += diff
-        if p.remaining_quantity < 0:
-            p.remaining_quantity = 0
     if 'location_id' in data:
         if data['location_id'] and not Location.query.get(data['location_id']):
             return jsonify({'error': 'Location does not exist'}), 400
@@ -172,8 +166,6 @@ def delete_location(location_id):
     db.session.commit()
     return jsonify({'message': 'Location deleted'})
 
-## Signup and login endpoints fully removed
-
 # List all movements endpoint
 @app.route('/movements', methods=['GET'])
 def get_movements():
@@ -188,60 +180,68 @@ def get_movements():
             'qty': m.qty
         } for m in movements
     ])
-    if 'movement_id' in data and data['movement_id']:
-        movement_id = data['movement_id']
-        if ProductMovement.query.get(movement_id):
-            return jsonify({'error': 'Movement ID already exists'}), 400
-    else:
-        # Find the max movement_id as integer and increment
-        last = db.session.query(ProductMovement).order_by(ProductMovement.movement_id.desc()).first()
-        try:
-            last_id = int(last.movement_id) if last and str(last.movement_id).isdigit() else 0
-        except Exception:
-            last_id = 0
-        movement_id = str(last_id + 1)
-    product = Product.query.get(data['product_id'])
-    if not product:
-        return jsonify({'error': 'Product does not exist'}), 400
-    if data.get('from_location') and not Location.query.get(data['from_location']):
-        return jsonify({'error': 'from_location does not exist'}), 400
-    if data.get('to_location') and not Location.query.get(data['to_location']):
-        return jsonify({'error': 'to_location does not exist'}), 400
-    qty = int(data['qty'])
-    if qty <= 0:
-        return jsonify({'error': 'qty must be positive'}), 400
-    # Per-location stock validation
-    if data.get('from_location'):
-        from sqlalchemy import func
-        in_q = db.session.query(func.sum(ProductMovement.qty)).filter_by(product_id=data['product_id'], to_location=data['from_location']).scalar() or 0
-        out_q = db.session.query(func.sum(ProductMovement.qty)).filter_by(product_id=data['product_id'], from_location=data['from_location']).scalar() or 0
-        available = in_q - out_q
-        if available <= 0:
-            return jsonify({'error': f'No stock for product {data["product_id"]} at location {data["from_location"]}'}), 400
-        if qty > available:
-            return jsonify({'error': f'Not enough stock at {data["from_location"]}. Available: {available}'}), 400
-    # Enforce remaining_quantity check for outbound movement
-    if data.get('from_location') is None:
-        # Inbound: increase remaining_quantity
-        product.remaining_quantity += qty
-    else:
-        # Outbound or transfer: check and decrease remaining_quantity
-        if qty > product.remaining_quantity:
-            return jsonify({'error': f'Not enough remaining quantity. Available: {product.remaining_quantity}'}), 400
-        product.remaining_quantity -= qty
-    m = ProductMovement(
-        movement_id=movement_id,
-        product_id=data['product_id'],
-        qty=qty,
-        from_location=data.get('from_location'),
-        to_location=data.get('to_location')
-    )
-    db.session.add(m)
-    db.session.commit()
-    return jsonify({'message': 'Movement created', 'movement_id': m.movement_id}), 201
+
+# Create new movement endpoint
+@app.route('/movements', methods=['POST'])
+def add_movement():
+    try:
+        data = request.get_json()
+        if not data or not data.get('product_id') or not data.get('qty'):
+            return jsonify({'error': 'product_id and qty required'}), 400
+        
+        if 'movement_id' in data and data['movement_id']:
+            movement_id = data['movement_id']
+            if ProductMovement.query.get(movement_id):
+                return jsonify({'error': 'Movement ID already exists'}), 400
+        else:
+            # Generate a unique movement ID using timestamp and random number
+            import time
+            import random
+            movement_id = f"{int(time.time())}-{random.randint(1000, 9999)}"
+            
+        product = Product.query.get(data['product_id'])
+        if not product:
+            return jsonify({'error': 'Product does not exist'}), 400
+            
+        if data.get('from_location') and not Location.query.get(data['from_location']):
+            return jsonify({'error': 'from_location does not exist'}), 400
+            
+        if data.get('to_location') and not Location.query.get(data['to_location']):
+            return jsonify({'error': 'to_location does not exist'}), 400
+            
+        qty = int(data['qty'])
+        if qty <= 0:
+            return jsonify({'error': 'qty must be positive'}), 400
+            
+        # Per-location stock validation
+        if data.get('from_location'):
+            from sqlalchemy import func
+            in_q = db.session.query(func.sum(ProductMovement.qty)).filter_by(product_id=data['product_id'], to_location=data['from_location']).scalar() or 0
+            out_q = db.session.query(func.sum(ProductMovement.qty)).filter_by(product_id=data['product_id'], from_location=data['from_location']).scalar() or 0
+            available = in_q - out_q
+            if available <= 0:
+                return jsonify({'error': f'No stock for product {data["product_id"]} at location {data["from_location"]}'}), 400
+            if qty > available:
+                return jsonify({'error': f'Not enough stock at {data["from_location"]}. Available: {available}'}), 400
+                
+        # Remaining quantity checks removed as per request
+            
+        m = ProductMovement(
+            movement_id=movement_id,
+            product_id=data['product_id'],
+            qty=qty,
+            from_location=data.get('from_location'),
+            to_location=data.get('to_location')
+        )
+        db.session.add(m)
+        db.session.commit()
+        return jsonify({'message': 'Movement created', 'movement_id': m.movement_id}), 201
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error in add_movement: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/movements/<movement_id>', methods=['GET'])
-
 def get_movement(movement_id):
     m = ProductMovement.query.get(movement_id)
     if not m:
