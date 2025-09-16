@@ -127,7 +127,7 @@ def add_product():
             return jsonify({'error': 'Location does not exist'}), 400
     
     # Insert new product
-    total_qty = data.get('total_quantity', 0)
+    total_qty = data.get('total_quantity')
     insert_query = '''
     INSERT INTO product (product_id, name, description, total_quantity, location_id)
     VALUES (?, ?, ?, ?, ?)
