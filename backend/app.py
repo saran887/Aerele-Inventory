@@ -176,9 +176,9 @@ def update_product(product_id):
     product = execute_query(check_query, (product_id,), one=True)
     if not product:
         return jsonify({'error': 'Product not found'}), 404
-    
+
     data = request.get_json()
-    
+
     # Check if location exists if provided
     if 'location_id' in data:
         if data['location_id']:
@@ -186,39 +186,95 @@ def update_product(product_id):
             location = execute_query(location_query, (data['location_id'],), one=True)
             if not location:
                 return jsonify({'error': 'Location does not exist'}), 400
-    
+
+    # Calculate remaining stock if location changes
+    location_changed = False
+    old_location = product.get('location_id')
+    new_location = data.get('location_id', old_location)
+    total_quantity = data.get('total_quantity', product.get('total_quantity', 0))
+    if old_location and new_location and old_location != new_location:
+        location_changed = True
+
     # Build update query dynamically based on provided fields
     update_fields = []
     params = []
-    
+
     if 'name' in data:
         update_fields.append('name = ?')
         params.append(data['name'])
-    
+
     if 'description' in data:
         update_fields.append('description = ?')
         params.append(data['description'])
-    
+
     if 'total_quantity' in data:
         update_fields.append('total_quantity = ?')
         params.append(data['total_quantity'])
-    
+
     if 'location_id' in data:
         update_fields.append('location_id = ?')
         params.append(data['location_id'])
-    
+
     if not update_fields:
         return jsonify({'message': 'No fields to update'}), 200
-    
+
     update_query = f'''
     UPDATE product
     SET {', '.join(update_fields)}
     WHERE product_id = ?
     '''
     params.append(product_id)
-    
+
     try:
         execute_query(update_query, tuple(params), commit=True)
+
+        # If location changed, add a new inbound movement for the remaining stock to the new location
+        if location_changed:
+            # Calculate total inbound to old location
+            in_query = '''
+            SELECT COALESCE(SUM(qty), 0) as total_in
+            FROM product_movement
+            WHERE product_id = ? AND to_location = ?
+            '''
+            in_result = execute_query(in_query, (product_id, old_location), one=True)
+            in_qty = in_result['total_in'] if in_result else 0
+
+            # Calculate total outbound from old location
+            out_query = '''
+            SELECT COALESCE(SUM(qty), 0) as total_out
+            FROM product_movement
+            WHERE product_id = ? AND from_location = ?
+            '''
+            out_result = execute_query(out_query, (product_id, old_location), one=True)
+            out_qty = out_result['total_out'] if out_result else 0
+
+            remaining = in_qty - out_qty
+            if remaining > 0:
+                # Add inbound movement to new location for remaining stock
+                movement_id = f'RELOC-{product_id}-{int(time.time())}'
+                timestamp = datetime.utcnow().isoformat()
+                movement_query = '''
+                INSERT INTO product_movement (movement_id, timestamp, from_location, to_location, product_id, qty)
+                VALUES (?, ?, ?, ?, ?, ?)
+                '''
+                execute_query(
+                    movement_query,
+                    (movement_id, timestamp, old_location, new_location, product_id, remaining),
+                    commit=True
+                )
+
+
+        # If total_quantity is changed, update the INIT movement as well (qty and timestamp)
+        if 'total_quantity' in data:
+            from datetime import datetime
+            init_movement_id = f'INIT-{product_id}'
+            update_init_query = '''
+            UPDATE product_movement
+            SET qty = ?, timestamp = ?
+            WHERE movement_id = ?
+            '''
+            execute_query(update_init_query, (data['total_quantity'], datetime.utcnow().isoformat(), init_movement_id), commit=True)
+
         return jsonify({'message': 'Product updated'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -483,33 +539,38 @@ def update_movement(movement_id):
     # Build update query dynamically based on provided fields
     update_fields = []
     params = []
-    
+
     if 'product_id' in data:
         update_fields.append('product_id = ?')
         params.append(data['product_id'])
-    
+
     if 'qty' in data:
         update_fields.append('qty = ?')
         params.append(int(data['qty']))
-    
+
     if 'from_location' in data:
         update_fields.append('from_location = ?')
         params.append(data['from_location'])
-    
+
     if 'to_location' in data:
         update_fields.append('to_location = ?')
         params.append(data['to_location'])
-    
-    if not update_fields:
+
+    # Always update timestamp to now if any field is updated
+    if update_fields:
+        update_fields.append('timestamp = ?')
+        from datetime import datetime
+        params.append(datetime.utcnow().isoformat())
+    else:
         return jsonify({'message': 'No fields to update'}), 200
-    
+
     update_query = f'''
     UPDATE product_movement
     SET {', '.join(update_fields)}
     WHERE movement_id = ?
     '''
     params.append(movement_id)
-    
+
     try:
         execute_query(update_query, tuple(params), commit=True)
         return jsonify({'message': 'Movement updated'})

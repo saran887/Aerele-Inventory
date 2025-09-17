@@ -37,10 +37,11 @@ export default function Locations() {
           <h1 className="text-3xl font-extrabold text-blue-800 mb-4 md:mb-0 tracking-tight">Locations</h1>
           <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition-all duration-150" onClick={() => { setEditing(null); setShowForm(true); }}>+ Add Location</button>
         </div>
-        <div className="mb-4 flex flex-wrap gap-4">
-          <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-            <div className="text-xs">Total Locations</div>
-            <div className="text-lg">{locations.length}</div>
+        {/* Modern summary card for total locations */}
+        <div className="mb-6 flex flex-wrap gap-4">
+          <div className="flex items-center bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 text-blue-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+            <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21.75c-4.5-4.5-7.5-7.5-7.5-11.25A7.5 7.5 0 0112 3a7.5 7.5 0 017.5 7.5c0 3.75-3 6.75-7.5 11.25z" /><circle cx="12" cy="10.5" r="2.25" /></svg>
+            Total Locations: {locations.length}
           </div>
         </div>
         {showForm && <LocationForm location={editing} onClose={() => { setShowForm(false); fetchLocations(); }} />}
@@ -52,7 +53,7 @@ export default function Locations() {
                 <th className="px-4 py-2">ID</th>
                 <th className="px-4 py-2">Name</th>
                 <th className="px-4 py-2">Address</th>
-                <th className="px-4 py-2 w-40"></th>
+                <th className="px-4 py-2 w-48"></th>
               </tr>
             </thead>
             <tbody>

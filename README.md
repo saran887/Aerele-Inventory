@@ -90,12 +90,11 @@ The application uses SQLite with the following tables:
 
 ## Output
 
-Screenshots of the application are provided in the `output` folder:
+Screenshots of the application are provided in the `output` folder. 
 
-- Location.png
-- Product Movement.png
-- Product-Before.png
-- Product.png
-- Report.png
+- locations.png
+- movements.png
+- products.png
+- report.png
 
-These images demonstrate the UI and features of the application.
+These images demonstrate the current UI and features of the application as of the latest version.

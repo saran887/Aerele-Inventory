@@ -62,14 +62,11 @@ export default function Products() {
           <h1 className="text-3xl font-extrabold text-blue-800 mb-4 md:mb-0 tracking-tight">Products</h1>
           <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition-all duration-150" onClick={() => { setEditing(null); setShowForm(true); }}>+ Add Product</button>
         </div>
-        <div className="mb-4 flex flex-wrap gap-4">
-          <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-            <div className="text-xs">Total Products</div>
-            <div className="text-lg">{products.length}</div>
-          </div>
-          <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-            <div className="text-xs">Total Stock</div>
-            <div className="text-lg">{products.reduce((sum, p) => sum + (p.total_quantity || 0), 0)}</div>
+        {/* Modern summary card for total products */}
+        <div className="mb-6 flex flex-wrap gap-4">
+          <div className="flex items-center bg-gradient-to-r from-purple-200 to-purple-100 border border-purple-300 text-purple-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+            <svg className="w-6 h-6 mr-2 text-purple-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.25 2.25 0 015.25 5.25h13.5A2.25 2.25 0 0121 7.5v9a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5v-9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 10.5h9" /></svg>
+            Total Products: {products.length}
           </div>
         </div>
         {showForm && <ProductForm product={editing} onClose={() => { setShowForm(false); fetchProducts(); fetchBalances(); }} />}

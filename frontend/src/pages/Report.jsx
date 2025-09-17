@@ -20,18 +20,18 @@ export default function Report() {
       <div className="bg-gradient-to-br from-blue-50 to-white rounded-2xl shadow-xl p-8 mb-8 border border-blue-100">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-3xl font-extrabold text-blue-800 mb-4 md:mb-0 tracking-tight">Inventory Report</h1>
-          <div className="flex space-x-4">
-            <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-              <div className="text-xs">Products</div>
-              <div className="text-lg">{totalProducts}</div>
+          <div className="flex flex-wrap gap-4">
+            <div className="flex items-center bg-gradient-to-r from-purple-200 to-purple-100 border border-purple-300 text-purple-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+              <svg className="w-6 h-6 mr-2 text-purple-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5A2.25 2.25 0 015.25 5.25h13.5A2.25 2.25 0 0121 7.5v9a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 16.5v-9z" /><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 10.5h9" /></svg>
+              Products: {totalProducts}
             </div>
-            <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-              <div className="text-xs">Locations</div>
-              <div className="text-lg">{totalLocations}</div>
+            <div className="flex items-center bg-gradient-to-r from-blue-200 to-blue-100 border border-blue-300 text-blue-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+              <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 21.75c-4.5-4.5-7.5-7.5-7.5-11.25A7.5 7.5 0 0112 3a7.5 7.5 0 017.5 7.5c0 3.75-3 6.75-7.5 11.25z" /><circle cx="12" cy="10.5" r="2.25" /></svg>
+              Locations: {totalLocations}
             </div>
-            <div className="bg-green-100 text-green-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-              <div className="text-xs">Total Stock</div>
-              <div className="text-lg">{totalStock}</div>
+            <div className="flex items-center bg-gradient-to-r from-green-200 to-green-100 border border-green-300 text-green-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+              <svg className="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 1.5" /><circle cx="12" cy="12" r="9" /></svg>
+              Total Stock: {totalStock}
             </div>
           </div>
         </div>

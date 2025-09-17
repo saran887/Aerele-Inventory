@@ -37,10 +37,11 @@ export default function Movements() {
           <h1 className="text-3xl font-extrabold text-blue-800 mb-4 md:mb-0 tracking-tight">Product Movements</h1>
           <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold shadow transition-all duration-150" onClick={() => { setEditing(null); setShowForm(true); }}>+ Add Movement</button>
         </div>
+        {/* Modern summary card for total movements */}
         <div className="mb-4 flex flex-wrap gap-4">
-          <div className="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg font-semibold shadow text-center">
-            <div className="text-xs">Total Movements</div>
-            <div className="text-lg">{movements.length}</div>
+          <div className="flex items-center bg-gradient-to-r from-pink-200 to-pink-100 border border-pink-300 text-pink-800 px-6 py-3 rounded-2xl font-bold shadow-md text-lg min-w-[180px]">
+            <svg className="w-6 h-6 mr-2 text-pink-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2" /><circle cx="12" cy="12" r="9" /></svg>
+            Total Movements: {movements.length}
           </div>
         </div>
         {showForm && <MovementForm movement={editing} onClose={() => { setShowForm(false); fetchMovements(); }} />}
